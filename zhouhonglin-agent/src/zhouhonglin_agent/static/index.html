@@ -1,0 +1,2065 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛒 ZhouHongLin 电商智能客服Agent系统</title>
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%23667eea;stop-opacity:1' /><stop offset='100%25' style='stop-color:%23764ba2;stop-opacity:1' /></linearGradient></defs><rect width='100' height='100' rx='20' fill='url(%23grad)'/><circle cx='35' cy='40' r='8' fill='white'/><circle cx='65' cy='40' r='8' fill='white'/><path d='M 30 65 Q 50 75 70 65' stroke='white' stroke-width='6' fill='none' stroke-linecap='round'/></svg>">
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .status-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .tab {
+            padding: 18px 40px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 15px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: white;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* 聊天区域 */
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .chat-controls {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 14px;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        select, input[type="number"], input[type="text"] {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 16px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .message-content code {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message-content pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        .typing-indicator {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-4px);
+            }
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 14px;
+            resize: none;
+            font-family: inherit;
+            max-height: 120px;
+        }
+
+        #sendBtn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #sendBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c757d;
+            padding: 60px 20px;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        /* 资料库管理区域 */
+        .knowledge-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .knowledge-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .knowledge-card h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #495057;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .info-value {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #ef4444;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+        /* 文档列表样式 */
+        .doc-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .doc-item {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .doc-item:hover {
+            background: #f8f9fa;
+        }
+
+        .doc-item:last-child {
+            border-bottom: none;
+        }
+
+        .doc-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .doc-id {
+            font-size: 11px;
+            color: #6c757d;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 4px;
+        }
+
+        .doc-text {
+            font-size: 13px;
+            color: #495057;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .doc-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        .btn-view {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #5568d3;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        .doc-stats {
+            display: flex;
+            gap: 12px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .doc-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .doc-stat-label {
+            color: #6c757d;
+        }
+
+        .doc-stat-value {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        /* 系统设置区域 */
+        .settings-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .settings-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .settings-card h3 {
+            font-size: 18px;
+            margin-bottom: 24px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .slider-group {
+            margin-bottom: 24px;
+        }
+
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #495057;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .slider-value {
+            color: #667eea;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #e9ecef;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+            transition: all 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+            border: none;
+        }
+
+        .slider-description {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        .slider-range {
+            font-size: 11px;
+            color: #adb5bd;
+            margin-top: 4px;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #495057;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #f8f9fa;
+            color: #495057;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-body .doc-id {
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .modal-body .doc-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            display: block;
+            -webkit-line-clamp: unset;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 ZhouHongLin 电商智能客服Agent系统</h1>
+            <p>基于RAG检索增强的店铺智能问答与工具调用客服系统</p>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span>系统在线</span>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('chat')">💬 智能对话</button>
+            <button class="tab" onclick="switchTab('knowledge')">📚 商品资料库管理</button>
+            <button class="tab" onclick="switchTab('settings')">⚙️ 系统设置</button>
+        </div>
+
+        <div class="content">
+            <!-- 智能对话标签页 -->
+            <div id="chatTab" class="tab-content active">
+                <div class="chat-area">
+                    <div class="chat-controls">
+                        <div class="control-group">
+                            <label>客服类型：</label>
+                            <select id="agentType">
+                                <option value="simple">基础客服问答</option>
+                                <option value="tool">工具型客服（支持运费计算、订单时效查询）</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>商品资料库：</label>
+                            <select id="ragCollection" style="min-width: 150px;">
+                                <option value="">-- 不使用商品资料库 --</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-danger" onclick="clearChatHistory()">清除历史</button>
+                    </div>
+
+                    <div class="chat-container scrollbar" id="chatContainer">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <h3>欢迎咨询</h3>
+                            <p>选择客服类型（可选商品资料库），然后输入您的问题开始对话</p>
+                        </div>
+                    </div>
+
+                    <div class="input-area">
+                        <div class="input-container">
+                            <textarea id="userInput" placeholder="输入您的问题..." rows="1"></textarea>
+                            <button id="sendBtn" onclick="sendMessage()">发送</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 商品资料库管理标签页 -->
+            <div id="knowledgeTab" class="tab-content">
+                <div class="knowledge-area scrollbar">
+                    <!-- 上传文本 -->
+                    <div class="knowledge-card">
+                        <h3>📝 上传商品资料/售后规则文档</h3>
+                        <div class="form-group">
+                            <label>资料库名称：</label>
+                            <select id="uploadCollection" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px;">
+                                <option value="">-- 请选择资料库 --</option>
+                            </select>
+                            <button class="btn btn-secondary btn-sm" onclick="showCreateCollectionModal('upload')" style="margin-top: 8px;">+ 新建资料库</button>
+                        </div>
+                        <div class="form-group">
+                            <label>文本内容（每行一个文档片段）：</label>
+                            <textarea id="textContent" rows="6" placeholder="输入商品信息、售后规则、物流政策等文本..."></textarea>
+                        </div>
+                        <button class="btn btn-primary" id="uploadTextBtn" onclick="uploadTexts()" style="width: 100%;">上传商品资料</button>
+                        <div id="uploadTextResult"></div>
+                    </div>
+
+                    <!-- 上传文件 -->
+                    <div class="knowledge-card">
+                        <h3>📁 上传商品资料文件</h3>
+                        <div class="form-group">
+                            <label>资料库名称：</label>
+                            <select id="fileUploadCollection" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px;">
+                                <option value="">-- 请选择资料库 --</option>
+                            </select>
+                            <button class="btn btn-secondary btn-sm" onclick="showCreateCollectionModal('file')" style="margin-top: 8px;">+ 新建资料库</button>
+                        </div>
+                        <div class="form-group">
+                            <label>选择文件（.txt、.md格式，支持多选）：</label>
+                            <input type="file" id="fileSelectInput" accept=".txt,.md" multiple style="display: none;">
+                            <button class="btn btn-secondary" onclick="document.getElementById('fileSelectInput').click()" style="width: 100%;">📂 选择文件</button>
+                            <div id="selectedFiles" style="margin-top: 10px; font-size: 13px; color: #666;"></div>
+                        </div>
+                        <button class="btn btn-primary" id="uploadFileBtn" onclick="uploadFiles()" style="width: 100%;">上传商品资料文件</button>
+                        <div id="uploadFileResult"></div>
+                    </div>
+
+                    <!-- 文档列表 -->
+                    <div class="knowledge-card">
+                        <h3>📄 商品资料列表</h3>
+                        <div class="form-group">
+                            <label>选择资料库：</label>
+                            <select id="browserCollection" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px;">
+                                <option value="">-- 请先选择资料库 --</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                            <button class="btn btn-secondary" onclick="loadDocuments()" style="flex: 1;">加载商品资料列表</button>
+                            <button class="btn btn-secondary" onclick="refreshDocuments()">刷新</button>
+                        </div>
+                        <div id="docStats"></div>
+                        <div id="docBrowser"></div>
+                    </div>
+
+                    <!-- 资料库管理 -->
+                    <div class="knowledge-card">
+                        <h3>🗑️ 商品资料管理</h3>
+                        <div class="form-group">
+                            <label>资料库名称：</label>
+                            <select id="manageCollection" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px;">
+                                <option value="">-- 请选择要清空的资料库 --</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-danger" id="clearKnowledgeBtn" onclick="clearKnowledgeBase()" style="width: 100%;" disabled>清空商品资料库</button>
+                        <div class="alert alert-info" style="margin-top: 12px;">
+                            ⚠️ 清空商品资料库将删除所有商品资料，此操作不可恢复！
+                        </div>
+                    </div>
+
+                    <!-- 资料库信息 -->
+                    <div class="knowledge-card">
+                        <h3>ℹ️ 商品资料库信息</h3>
+                        <div class="form-group">
+                            <label>查询资料库：</label>
+                            <select id="infoCollection" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px;">
+                                <option value="">-- 请先加载资料库列表 --</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" onclick="getKnowledgeInfo()" style="width: 100%; margin-bottom: 16px;">刷新商品资料库信息</button>
+                        <div id="knowledgeInfo">
+                            <div class="alert alert-info">点击"刷新商品资料库信息"查看状态</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统设置标签页 -->
+            <div id="settingsTab" class="tab-content">
+                <div class="settings-area">
+                    <div class="settings-card">
+                        <h3>⚙️ 客服系统参数设置</h3>
+                        
+                        <!-- 模型温度 -->
+                        <div class="slider-group">
+                            <label>
+                                <span>🌡️ 回复温度</span>
+                                <span class="slider-value" id="temperatureValue">0.7</span>
+                            </label>
+                            <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7" oninput="updateSliderValue('temperature', 'temperatureValue')">
+                            <div class="slider-description">控制客服回复的语气风格。较低值(0-0.5)使回复更专业严谨，较高值(1-2)使回复更亲切灵活。</div>
+                            <div class="slider-range">范围: 0.0 - 2.0</div>
+                        </div>
+
+                        <!-- 检索文档条数 -->
+                        <div class="slider-group">
+                            <label>
+                                <span>📚 商品资料检索数量</span>
+                                <span class="slider-value" id="topKValue">5</span>
+                            </label>
+                            <input type="range" id="topK" min="1" max="10" step="1" value="5" oninput="updateSliderValue('topK', 'topKValue')">
+                            <div class="slider-description">设置客服回复时参考的商品资料数量。较少的资料会使回答更聚焦，较多的资料会提供更多信息但可能增加噪音。</div>
+                            <div class="slider-range">范围: 1 - 10</div>
+                        </div>
+
+                        <!-- Agent最大迭代轮次 -->
+                        <div class="slider-group">
+                            <label>
+                                <span>🔄 客服最大交互轮次</span>
+                                <span class="slider-value" id="maxIterationsValue">5</span>
+                            </label>
+                            <input type="range" id="maxIterations" min="1" max="10" step="1" value="5" oninput="updateSliderValue('maxIterations', 'maxIterationsValue')">
+                            <div class="slider-description">设置工具型客服的最大交互次数。较少的轮次会更快返回结果，较多的轮次可以处理更复杂的多步骤任务（如运费计算、订单查询）。</div>
+                            <div class="slider-range">范围: 1 - 10</div>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="btn btn-secondary" onclick="resetSettings()">重置默认值</button>
+                            <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文档详情模态框 -->
+    <div id="docModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📄 文档详情</h3>
+                <button class="modal-close" onclick="closeDocModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="docModalBody">
+                <!-- 内容将通过 JavaScript 填充 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDocModal()">关闭</button>
+                <button class="btn btn-danger" onclick="deleteCurrentDoc()" id="deleteDocBtn">删除文档</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建资料库模态框 -->
+    <div id="createCollectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ 新建资料库</h3>
+                <button class="modal-close" onclick="closeCreateCollectionModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>资料库名称：</label>
+                    <input type="text" id="newCollectionName" placeholder="请输入资料库名称（如：product_knowledge）" style="width: 100%;">
+                    <div style="font-size: 12px; color: #6c757d; margin-top: 6px;">
+                        ⚠️ 名称只能包含字母、数字、下划线和连字符，长度不超过50个字符
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateCollectionModal()">取消</button>
+                <button class="btn btn-primary" onclick="createCollection()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let isLoading = false;
+
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            if (tabName === 'knowledge') {
+                loadAllCollections();
+            }
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        document.getElementById('userInput').addEventListener('input', function() {
+            autoResize(this);
+        });
+
+        function renderMarkdown(content) {
+            if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
+                return content;
+            }
+            try {
+                const rawHtml = marked.parse(content);
+                return DOMPurify.sanitize(rawHtml);
+            } catch (error) {
+                return content;
+            }
+        }
+
+        function addMessage(containerId, role, content, messageId = null) {
+            const container = document.getElementById(containerId);
+            
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            let messageDiv = messageId ? document.getElementById(messageId) : null;
+            
+            if (messageDiv) {
+                const contentDiv = messageDiv.querySelector('.message-content');
+                if (role === 'assistant') {
+                    contentDiv.innerHTML = renderMarkdown(content);
+                } else {
+                    contentDiv.textContent = content;
+                }
+            } else {
+                messageDiv = document.createElement('div');
+                messageDiv.className = `message ${role}`;
+                if (messageId) {
+                    messageDiv.id = messageId;
+                }
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                if (role === 'assistant') {
+                    contentDiv.innerHTML = renderMarkdown(content);
+                } else {
+                    contentDiv.textContent = content;
+                }
+                
+                messageDiv.appendChild(contentDiv);
+                container.appendChild(messageDiv);
+            }
+            
+            container.scrollTop = container.scrollHeight;
+            return messageDiv.id || `msg-${Date.now()}`;
+        }
+
+        function showTyping(containerId, messageId) {
+            const container = document.getElementById(containerId);
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = messageId;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            
+            messageDiv.appendChild(contentDiv);
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendMessage() {
+            if (isLoading) return;
+
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const agentType = document.getElementById('agentType').value;
+            const collection = document.getElementById('ragCollection').value;
+            const sendBtn = document.getElementById('sendBtn');
+
+            addMessage('chatContainer', 'user', message);
+            input.value = '';
+            input.style.height = 'auto';
+
+            isLoading = true;
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading-spinner"></span>';
+
+            const messageId = `msg-${Date.now()}`;
+            showTyping('chatContainer', messageId);
+
+            try {
+                if (collection) {
+                    const topK = parseInt(document.getElementById('topK').value) || 5;
+                    const response = await fetch(`${API_BASE}/api/rag/query/stream`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            question: message,
+                            collection_name: collection,
+                            session_id: 'default',
+                            top_k: topK,
+                            use_history: true,
+                            optimize_query: true
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('RAG 查询失败');
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let fullResponse = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if (data.content) {
+                                        fullResponse += data.content;
+                                        addMessage('chatContainer', 'assistant', fullResponse, messageId);
+                                    }
+                                    if (data.error) {
+                                        throw new Error(data.error);
+                                    }
+                                } catch (e) {
+                                    if (e.message) throw e;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    const response = await fetch(`${API_BASE}/api/chat/stream`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: message,
+                            agent_type: agentType,
+                            session_id: 'default'
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('请求失败');
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let fullResponse = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if (data.content) {
+                                        fullResponse += data.content;
+                                        addMessage('chatContainer', 'assistant', fullResponse, messageId);
+                                    }
+                                } catch (e) {}
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const msgElement = document.getElementById(messageId);
+                if (msgElement) msgElement.remove();
+                addMessage('chatContainer', 'assistant', `错误: ${error.message}`);
+            } finally {
+                isLoading = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = '发送';
+            }
+        }
+
+        // ========== 文本上传模块 ==========
+        // 纯文本内容上传，调用 /api/rag/upload/texts 接口
+        async function uploadTexts() {
+            const content = document.getElementById('textContent').value.trim();
+            const collection = document.getElementById('uploadCollection').value;
+            const resultDiv = document.getElementById('uploadTextResult');
+            const uploadBtn = document.getElementById('uploadTextBtn');
+
+            if (!content) {
+                resultDiv.innerHTML = '<div class="alert alert-error">✗ 请输入商品文档内容</div>';
+                return;
+            }
+
+            const texts = content.split('\n').filter(t => t.trim());
+            
+            try {
+                resultDiv.innerHTML = '<div class="alert alert-info">上传中...（首次上传可能需要较长时间，请耐心等待）</div>';
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<span class="loading-spinner"></span> 上传中...';
+                
+                // 90秒超时控制（嵌入模型调用可能耗时较长）
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 90000);
+                
+                const response = await fetch(`${API_BASE}/api/rag/upload/texts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        texts: texts,
+                        collection_name: collection
+                    }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const actualCollectionName = data.collection_name || collection;
+                    let successMsg = `✓ 成功上传 ${data.chunks_added} 条文本片段，已存入资料库 <strong>${actualCollectionName}</strong><br><span style="color:#666">可在智能对话页选择该资料库进行问答</span>`;
+                    if (data.errors && data.errors.length > 0) {
+                        successMsg += `<br><small style="color:#f59e0b">部分片段上传失败: ${data.errors.length} 条</small>`;
+                    }
+                    resultDiv.innerHTML = `<div class="alert alert-success">${successMsg}</div>`;
+                    document.getElementById('textContent').value = '';
+                    syncCollectionName(actualCollectionName);
+                    loadAllCollections();
+                    
+                    setTimeout(() => {
+                        resultDiv.innerHTML = '';
+                    }, 3000);
+                } else {
+                    let errorMsg = data.detail || '上传失败';
+                    if (response.status === 402) {
+                        errorMsg = '✗ 云端API余额不足，已自动切换到本地嵌入模型，请重新上传';
+                    } else if (response.status === 504) {
+                        errorMsg = '✗ 请求超时，已自动切换到本地嵌入模型，请重新上传';
+                    } else if (response.status === 503) {
+                        errorMsg = '✗ 网络连接失败，已自动切换到本地嵌入模型，请重新上传';
+                    }
+                    resultDiv.innerHTML = `<div class="alert alert-error">${errorMsg}</div>`;
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    resultDiv.innerHTML = '<div class="alert alert-error">✗ 上传超时，已自动切换本地模型重试，请稍等...</div>';
+                    setTimeout(() => uploadTexts(), 3000);
+                } else {
+                    resultDiv.innerHTML = `<div class="alert alert-error">✗ 上传失败: ${error.message}</div>`;
+                }
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '上传商品资料';
+            }
+        }
+
+        // ========== 文件上传模块 ==========
+        // 文件选择后显示已选文件列表
+        document.getElementById('fileSelectInput').addEventListener('change', function(e) {
+            const files = e.target.files;
+            const fileListDiv = document.getElementById('selectedFiles');
+            
+            if (files.length === 0) {
+                fileListDiv.innerHTML = '';
+                return;
+            }
+            
+            let html = '<strong>已选择文件：</strong><ul style="margin: 5px 0 0 15px; padding-left: 0;">';
+            for (const file of files) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext !== 'txt' && ext !== 'md') {
+                    html += `<li style="color: #dc3545;">✗ ${file.name} (仅支持.txt、.md格式)</li>`;
+                } else {
+                    html += `<li>✓ ${file.name}</li>`;
+                }
+            }
+            html += '</ul>';
+            fileListDiv.innerHTML = html;
+        });
+
+        // 文件上传，调用 /api/rag/upload/files 接口（multipart/form-data）
+        async function uploadFiles() {
+            const fileInput = document.getElementById('fileSelectInput');
+            const collection = document.getElementById('fileUploadCollection').value;
+            const resultDiv = document.getElementById('uploadFileResult');
+            const uploadBtn = document.getElementById('uploadFileBtn');
+
+            if (fileInput.files.length === 0) {
+                resultDiv.innerHTML = '<div class="alert alert-error">✗ 请先选择txt/md格式文件</div>';
+                return;
+            }
+
+            // 检查文件格式
+            const invalidFiles = [];
+            const validFiles = [];
+            for (const file of fileInput.files) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext !== 'txt' && ext !== 'md') {
+                    invalidFiles.push(file.name);
+                } else {
+                    validFiles.push(file);
+                }
+            }
+            if (invalidFiles.length > 0 && validFiles.length === 0) {
+                resultDiv.innerHTML = `<div class="alert alert-error">✗ 文件格式不支持: ${invalidFiles.join(', ')}，仅支持.txt、.md格式</div>`;
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '<div class="alert alert-info">上传中...（首次上传可能需要较长时间，请耐心等待）</div>';
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<span class="loading-spinner"></span> 上传中...';
+                
+                const formData = new FormData();
+                formData.append('collection_name', collection);
+                
+                for (const file of validFiles) {
+                    formData.append('files', file);
+                }
+                
+                // 90秒超时控制（嵌入模型调用可能耗时较长）
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 90000);
+                
+                const response = await fetch(`${API_BASE}/api/rag/upload/files`, {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const actualCollectionName = data.collection_name || collection;
+                    let successMsg = `✓ 成功上传 ${data.total_files} 个文件，共 ${data.total_chunks} 个文档片段<br>资料库: <strong>${actualCollectionName}</strong>`;
+                    if (data.uploaded_files && data.uploaded_files.length > 0) {
+                        successMsg += `<br><small>已上传: ${data.uploaded_files.join(', ')}</small>`;
+                    }
+                    if (data.errors && data.errors.length > 0) {
+                        successMsg += `<br><small style="color:#f59e0b">部分文件上传失败: ${data.errors.join('; ')}</small>`;
+                    }
+                    successMsg += `<br><span style="color:#666">可在智能对话页选择该资料库进行问答</span>`;
+                    resultDiv.innerHTML = `<div class="alert alert-success">${successMsg}</div>`;
+                    // 清空文件选择
+                    fileInput.value = '';
+                    document.getElementById('selectedFiles').innerHTML = '';
+                    syncCollectionName(actualCollectionName);
+                    loadAllCollections();
+                    
+                    setTimeout(() => {
+                        resultDiv.innerHTML = '';
+                    }, 3000);
+                } else {
+                    let errorMsg = data.detail || '上传失败';
+                    if (response.status === 402) {
+                        errorMsg = '✗ 云端API余额不足，已自动切换到本地嵌入模型，请重新上传';
+                    } else if (response.status === 504) {
+                        errorMsg = '✗ 请求超时，已自动切换到本地嵌入模型，请重新上传';
+                    } else if (response.status === 503) {
+                        errorMsg = '✗ 网络连接失败，已自动切换到本地嵌入模型，请重新上传';
+                    }
+                    resultDiv.innerHTML = `<div class="alert alert-error">${errorMsg}</div>`;
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    resultDiv.innerHTML = '<div class="alert alert-error">✗ 上传超时，已自动切换本地模型重试，请稍等...</div>';
+                    setTimeout(() => uploadFiles(), 3000);
+                } else {
+                    resultDiv.innerHTML = `<div class="alert alert-error">✗ 上传失败: ${error.message}</div>`;
+                }
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '上传商品资料文件';
+            }
+        }
+
+        async function getKnowledgeInfo() {
+            const select = document.getElementById('infoCollection');
+            const collection = select.value;
+            const infoDiv = document.getElementById('knowledgeInfo');
+            
+            if (!collection) {
+                infoDiv.innerHTML = '<div class="alert alert-info">暂无资料库，请先上传文档创建</div>';
+                return;
+            }
+
+            try {
+                infoDiv.innerHTML = '<div class="alert alert-info">加载中...</div>';
+                
+                const response = await fetch(`${API_BASE}/api/rag/info/${collection}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    infoDiv.innerHTML = `
+                        <div class="info-item">
+                            <span class="info-label">资料库名称：</span>
+                            <span class="info-value">${escapeHtml(data.original_name || data.collection_name)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">文档总数：</span>
+                            <span class="info-value">${data.document_count || 0}</span>
+                        </div>
+                        ${data.storage_size ? `
+                        <div class="info-item">
+                            <span class="info-label">存储大小：</span>
+                            <span class="info-value">${(data.storage_size / 1024 / 1024).toFixed(2)} MB</span>
+                        </div>
+                        ` : ''}
+                        ${data.created_at ? `
+                        <div class="info-item">
+                            <span class="info-label">创建时间：</span>
+                            <span class="info-value">${new Date(data.created_at * 1000).toLocaleString()}</span>
+                        </div>
+                        ` : ''}
+                        <div class="info-item">
+                            <span class="info-label">检索模式：</span>
+                            <span class="info-value">${data.retrieval_mode || '混合检索'}</span>
+                        </div>
+                    `;
+                } else {
+                    infoDiv.innerHTML = `<div class="alert alert-error">✗ ${data.detail}</div>`;
+                }
+            } catch (error) {
+                infoDiv.innerHTML = `<div class="alert alert-error">✗ ${error.message}</div>`;
+            }
+        }
+
+        async function clearKnowledgeBase() {
+            const collection = document.getElementById('manageCollection').value;
+            
+            if (!collection) {
+                alert('请先选择要清空的资料库');
+                return;
+            }
+            
+            // 二次确认弹窗
+            if (!confirm(`⚠️ 危险操作确认\n\n确定要清空资料库"${collection}"吗？\n\n此操作不可恢复，清空后所有文档将被永久删除！`)) {
+                return;
+            }
+            
+            // 再次确认，防止误操作
+            if (!confirm(`二次确认：即将清空资料库"${collection}"，确定继续吗？`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/rag/clear/${collection}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✓ 资料库已清空');
+                    // 刷新所有相关组件
+                    loadAllCollections();
+                    getKnowledgeInfo();
+                    // 清空文档浏览面板
+                    document.getElementById('docBrowser').innerHTML = '<div class="alert alert-info">该资料库暂无文档</div>';
+                    document.getElementById('docStats').innerHTML = '';
+                } else {
+                    alert(`✗ 清空失败: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`✗ 清空失败: ${error.message}`);
+            }
+        }
+
+        async function clearChatHistory() {
+            if (!confirm('确定要清除对话历史吗？')) return;
+
+            try {
+                await fetch(`${API_BASE}/api/history/default`, { method: 'DELETE' });
+                const container = document.getElementById('chatContainer');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <h3>欢迎咨询</h3>
+                        <p>选择客服类型（可选商品资料库），然后输入您的问题开始对话</p>
+                    </div>
+                `;
+            } catch (error) {
+                alert('清除失败: ' + error.message);
+            }
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        let createCollectionTarget = '';
+
+        function syncCollectionName(collectionName) {
+            document.getElementById('uploadCollection').value = collectionName;
+            document.getElementById('fileUploadCollection').value = collectionName;
+            document.getElementById('infoCollection').value = collectionName;
+            document.getElementById('manageCollection').value = collectionName;
+            document.getElementById('browserCollection').value = collectionName;
+            document.getElementById('ragCollection').value = collectionName;
+            
+            lastSelectedCollection = collectionName;
+            
+            loadAllCollections();
+            updateClearButtonState();
+        }
+        
+        // 加载知识库列表到所有下拉框
+        async function loadCollections() {
+            try {
+                const response = await fetch(`${API_BASE}/api/rag/collections`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    console.error('加载知识库列表失败:', data.detail);
+                    return;
+                }
+                
+                const collections = data.collections || [];
+                
+                // 更新所有下拉框
+                const selectIds = ['browserCollection', 'infoCollection', 'manageCollection', 'ragCollection'];
+                selectIds.forEach(id => {
+                    const select = document.getElementById(id);
+                    const currentValue = select.value;
+                    
+                    select.innerHTML = '';
+                    
+                    if (collections.length === 0) {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = '-- 暂无资料库，请先上传文档创建 --';
+                        select.appendChild(option);
+                    } else {
+                        collections.forEach(item => {
+                            const displayName = item.original_name || item.collection_name;
+                            const valueName = item.original_name || item.collection_name;
+                            const option = document.createElement('option');
+                            option.value = valueName;
+                            option.textContent = displayName;
+                            select.appendChild(option);
+                        });
+                    }
+                    
+                    // 恢复之前的选中值，如果没有选中值且有集合，默认选中第一个
+                    if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+                        select.value = currentValue;
+                    } else if (collections.length > 0) {
+                        const firstItem = collections[0];
+                        select.value = firstItem.original_name || firstItem.collection_name;
+                        lastSelectedCollection = select.value;
+                    }
+                });
+                
+            } catch (error) {
+                console.error('加载知识库列表失败:', error);
+            }
+        }
+
+        let currentDocId = null;
+        let currentCollection = null;
+        let lastSelectedCollection = null;  // 保存最后一次选中的资料库
+
+        // 监听资料库下拉框变化
+        document.getElementById('browserCollection').addEventListener('change', function(e) {
+            lastSelectedCollection = e.target.value;
+        });
+
+        async function loadDocuments(limit = 50) {
+            const select = document.getElementById('browserCollection');
+            const collection = select.value || lastSelectedCollection;
+            const browserDiv = document.getElementById('docBrowser');
+            const statsDiv = document.getElementById('docStats');
+            
+            if (!collection) {
+                browserDiv.innerHTML = '<div class="alert alert-info">暂无资料库，请先上传文档创建</div>';
+                return;
+            }
+
+            // 更新下拉框选中状态
+            select.value = collection;
+            lastSelectedCollection = collection;
+
+            try {
+                browserDiv.innerHTML = '<div class="alert alert-info">加载中...</div>';
+                statsDiv.innerHTML = '';
+
+                // 120秒超时控制
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 120000);
+                
+                const response = await fetch(`${API_BASE}/api/rag/documents/${collection}?limit=${limit}`, {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    browserDiv.innerHTML = `<div class="alert alert-error">✗ ${data.detail}</div>`;
+                    return;
+                }
+
+                statsDiv.innerHTML = `
+                    <div class="doc-stats">
+                        <div class="doc-stat-item">
+                            <span class="doc-stat-label">资料库：</span>
+                            <span class="doc-stat-value">${data.collection_name}</span>
+                        </div>
+                        <div class="doc-stat-item">
+                            <span class="doc-stat-label">总文档数：</span>
+                            <span class="doc-stat-value">${data.total_count}</span>
+                        </div>
+                        <div class="doc-stat-item">
+                            <span class="doc-stat-label">显示：</span>
+                            <span class="doc-stat-value">${data.count} / ${data.total_count}</span>
+                        </div>
+                    </div>
+                `;
+
+                if (data.count === 0 || data.documents.length === 0) {
+                    browserDiv.innerHTML = '<div class="alert alert-info">该资料库暂无文档</div>';
+                    return;
+                }
+
+                let html = '<div class="doc-list scrollbar">';
+                data.documents.forEach(doc => {
+                    const shortText = doc.text.length > 100 ? doc.text.substring(0, 100) + '...' : doc.text;
+                    html += `
+                        <div class="doc-item">
+                            <div class="doc-content" style="flex: 1;">
+                                <div class="doc-id">ID: ${doc.id}</div>
+                                <div class="doc-text">${escapeHtml(shortText)}</div>
+                            </div>
+                            <div class="doc-actions">
+                                <button class="btn btn-sm btn-view" onclick="viewDocument('${escapeAttr(collection)}', '${escapeAttr(doc.id)}')">查看</button>
+                                <button class="btn btn-sm btn-delete" onclick="deleteDocumentById('${escapeAttr(collection)}', '${escapeAttr(doc.id)}')">删除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                browserDiv.innerHTML = html;
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    browserDiv.innerHTML = '<div class="alert alert-error">✗ 加载超时，请重试</div>';
+                } else {
+                    browserDiv.innerHTML = `<div class="alert alert-error">✗ ${error.message}</div>`;
+                }
+            }
+        }
+
+        function refreshDocuments() {
+            // 刷新时先重新拉取集合列表，再加载当前选中的资料库文档
+            loadAllCollections().then(() => {
+                const select = document.getElementById('browserCollection');
+                const currentCollection = select.value || lastSelectedCollection;
+                
+                if (!currentCollection) {
+                    document.getElementById('docBrowser').innerHTML = '<div class="alert alert-error">请先选择一个资料库</div>';
+                    return;
+                }
+                
+                loadDocuments();
+            });
+        }
+
+        async function viewDocument(collection, docId) {
+            currentCollection = collection;
+            currentDocId = docId;
+
+            const modal = document.getElementById('docModal');
+            const modalBody = document.getElementById('docModalBody');
+
+            try {
+                modalBody.innerHTML = '<div class="alert alert-info">加载中...</div>';
+                modal.classList.add('active');
+
+                const response = await fetch(`${API_BASE}/api/rag/document/${collection}/${docId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    modalBody.innerHTML = `<div class="alert alert-error">✗ ${data.detail}</div>`;
+                    return;
+                }
+
+                const doc = data.document;
+                modalBody.innerHTML = `
+                    <div class="doc-id">ID: ${doc.id}</div>
+                    <div class="doc-text">${escapeHtml(doc.text)}</div>
+                    ${doc.metadata && Object.keys(doc.metadata).length > 0 ? `
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e9ecef;">
+                            <strong style="font-size: 13px; color: #6c757d;">元数据：</strong>
+                            <pre style="margin-top: 8px; background: #f8f9fa; padding: 10px; border-radius: 6px; font-size: 12px;">${JSON.stringify(doc.metadata, null, 2)}</pre>
+                        </div>
+                    ` : ''}
+                `;
+
+            } catch (error) {
+                modalBody.innerHTML = `<div class="alert alert-error">✗ ${error.message}</div>`;
+            }
+        }
+
+        function closeDocModal() {
+            const modal = document.getElementById('docModal');
+            modal.classList.remove('active');
+            currentDocId = null;
+            currentCollection = null;
+        }
+
+        document.getElementById('docModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDocModal();
+            }
+        });
+
+        async function deleteCurrentDoc() {
+            if (!currentDocId || !currentCollection) return;
+
+            if (!confirm('确定要删除这个文档吗？此操作不可恢复！')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/rag/document/${currentCollection}/${currentDocId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('✓ 文档已删除');
+                    closeDocModal();
+                    if (document.getElementById('browserCollection').value === currentCollection) {
+                        loadDocuments();
+                    }
+                } else {
+                    alert(`✗ 删除失败: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`✗ 删除失败: ${error.message}`);
+            }
+        }
+
+        async function deleteDocumentById(collection, docId) {
+            if (!confirm('确定要删除这个文档吗？此操作不可恢复！')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/rag/document/${collection}/${docId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('✓ 文档已删除');
+                    loadDocuments();
+                } else {
+                    alert(`✗ 删除失败: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`✗ 删除失败: ${error.message}`);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function escapeAttr(text) {
+            return text.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        async function loadAllCollections() {
+            try {
+                const response = await fetch(`${API_BASE}/api/rag/collections`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const collections = data.collections || [];
+                    const selects = ['infoCollection', 'browserCollection', 'ragCollection', 'manageCollection', 'uploadCollection', 'fileUploadCollection'];
+                    
+                    selects.forEach(id => {
+                        const select = document.getElementById(id);
+                        if (select) {
+                            let html = '';
+                            collections.forEach(coll => {
+                                const displayName = coll.original_name || coll.collection_name;
+                                const valueName = coll.original_name || coll.collection_name;
+                                html += `<option value="${escapeAttr(valueName)}">${escapeHtml(displayName)}</option>`;
+                            });
+                            
+                            if (collections.length === 0) {
+                                html = '<option value="">暂无资料库，请先上传文档创建</option>';
+                            }
+                            
+                            select.innerHTML = html;
+                        }
+                    });
+                    
+                    if (collections.length > 0) {
+                        const firstCollection = collections[0].original_name || collections[0].collection_name;
+                        selects.forEach(id => {
+                            const select = document.getElementById(id);
+                            if (select) {
+                                select.value = firstCollection;
+                            }
+                        });
+                        lastSelectedCollection = firstCollection;
+                        loadDocuments();
+                    }
+                }
+            } catch (error) {
+                console.error('加载资料库列表失败:', error);
+                const selects = ['infoCollection', 'browserCollection', 'ragCollection', 'manageCollection', 'uploadCollection', 'fileUploadCollection'];
+                selects.forEach(id => {
+                    const select = document.getElementById(id);
+                    if (select) {
+                        select.innerHTML = '<option value="">加载失败，请刷新页面重试</option>';
+                    }
+                });
+            }
+            updateClearButtonState();
+        }
+
+        function updateSliderValue(sliderId, displayId) {
+            const slider = document.getElementById(sliderId);
+            const display = document.getElementById(displayId);
+            
+            let value = parseFloat(slider.value);
+            if (sliderId === 'temperature') {
+                display.textContent = value.toFixed(1);
+            } else {
+                display.textContent = value;
+            }
+        }
+
+        function resetSettings() {
+            document.getElementById('temperature').value = 0.7;
+            document.getElementById('temperatureValue').textContent = '0.7';
+            
+            document.getElementById('topK').value = 5;
+            document.getElementById('topKValue').textContent = '5';
+            
+            document.getElementById('maxIterations').value = 5;
+            document.getElementById('maxIterationsValue').textContent = '5';
+            
+            alert('✓ 已重置为默认值');
+        }
+
+        function saveSettings() {
+            const settings = {
+                temperature: parseFloat(document.getElementById('temperature').value),
+                topK: parseInt(document.getElementById('topK').value),
+                maxIterations: parseInt(document.getElementById('maxIterations').value)
+            };
+            
+            localStorage.setItem('agentSettings', JSON.stringify(settings));
+            alert('✓ 设置已保存');
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('agentSettings');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    if (settings.temperature !== undefined) {
+                        document.getElementById('temperature').value = settings.temperature;
+                        document.getElementById('temperatureValue').textContent = settings.temperature.toFixed(1);
+                    }
+                    if (settings.topK !== undefined) {
+                        document.getElementById('topK').value = settings.topK;
+                        document.getElementById('topKValue').textContent = settings.topK;
+                    }
+                    if (settings.maxIterations !== undefined) {
+                        document.getElementById('maxIterations').value = settings.maxIterations;
+                        document.getElementById('maxIterationsValue').textContent = settings.maxIterations;
+                    }
+                } catch (e) {
+                    console.error('加载设置失败:', e);
+                }
+            }
+        }
+
+        window.addEventListener('load', function() {
+            loadAllCollections();
+            loadSettings();
+        });
+
+        document.getElementById('manageCollection').addEventListener('change', function(e) {
+            updateClearButtonState();
+        });
+
+        function updateClearButtonState() {
+            const select = document.getElementById('manageCollection');
+            const btn = document.getElementById('clearKnowledgeBtn');
+            btn.disabled = !select.value;
+        }
+
+        function showCreateCollectionModal(target) {
+            createCollectionTarget = target;
+            document.getElementById('newCollectionName').value = '';
+            document.getElementById('createCollectionModal').classList.add('active');
+        }
+
+        function closeCreateCollectionModal() {
+            document.getElementById('createCollectionModal').classList.remove('active');
+            createCollectionTarget = '';
+        }
+
+        document.getElementById('createCollectionModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCreateCollectionModal();
+            }
+        });
+
+        async function createCollection() {
+            const name = document.getElementById('newCollectionName').value.trim();
+            if (!name) {
+                alert('请输入资料库名称');
+                return;
+            }
+            if (!/^[a-zA-Z0-9_-]{1,50}$/.test(name)) {
+                alert('资料库名称只能包含字母、数字、下划线和连字符，长度不超过50个字符');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/rag/collection`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(`✓ 资料库 "${name}" 创建成功`);
+                    closeCreateCollectionModal();
+                    loadAllCollections();
+                    if (createCollectionTarget === 'upload') {
+                        document.getElementById('uploadCollection').value = name;
+                    } else if (createCollectionTarget === 'file') {
+                        document.getElementById('fileUploadCollection').value = name;
+                    }
+                } else {
+                    alert(`✗ 创建失败: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`✗ 创建失败: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
